@@ -1,0 +1,14 @@
+/*
+ * Time_Base.h
+ *
+ *  Created on: Jul 9, 2024
+ *      Author: E0162112
+ */
+
+#ifndef TIME_BASE_H_
+#define TIME_BASE_H_
+
+void timebase_init(void);
+void SysTicK_incrementTick();
+
+#endif /* TIME_BASE_H_ */

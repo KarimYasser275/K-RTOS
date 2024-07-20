@@ -1,0 +1,13 @@
+#include "Time_Base.h"
+
+#define One_SEC_LOAD											(8000000U)
+
+#define SYSTICK_CTRL_ENABLE										(1U<<0)
+#define SYSTICK_CTRL_TICK_INT									(1U<<1)
+#define SYSTICK_CTRL_CLK_SRC									(1U<<2)
+#define SYSTICK_CTRL_COUNT_FLAG									(1U<<16)
+
+void timebase_init(void)
+{
+
+}

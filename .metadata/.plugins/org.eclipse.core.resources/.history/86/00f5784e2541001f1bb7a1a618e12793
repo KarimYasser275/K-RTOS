@@ -1,0 +1,48 @@
+/*
+ * osKernel.c
+ *
+ *  Created on: Jul 12, 2024
+ *      Author: E0162112
+ */
+
+
+#include "osKernel.h"
+
+TCB_t tcbs[NUM_OF_THREADS];
+TCB_t* current_thread;
+uint32_t TCB_Stack[NUM_OF_THREADS][STACK_SIZE];
+
+static void osKernelStack_Init(uint32_t thread);
+
+
+
+
+
+
+
+static void osKernelStack_Init(uint32_t thread)
+{
+	/*PSR register , set T-bit (bit21) to 1to operate in thumb mode*/
+	TCB_Stack[thread][STACK_SIZE -1] = (1U<<21);
+	/*Stack Pointer*/
+	tcbs[thread].stackPt = &TCB_Stack[thread][STACK_SIZE -16]
+	/*Initialize rest of registers by dummy value (optional for debugging)*/
+	TCB_Stack[thread][STACK_SIZE -3] = 0xAAAAAAAA; /*R14 (LR)*/
+	TCB_Stack[thread][STACK_SIZE -4] = 0xAAAAAAAA; /*R12*/
+	TCB_Stack[thread][STACK_SIZE -5] = 0xAAAAAAAA; /*R3*/
+	TCB_Stack[thread][STACK_SIZE -6] = 0xAAAAAAAA; /*R2*/
+	TCB_Stack[thread][STACK_SIZE -7] = 0xAAAAAAAA; /*R1*/
+	TCB_Stack[thread][STACK_SIZE -8] = 0xAAAAAAAA; /*R0*/
+
+	TCB_Stack[thread][STACK_SIZE -9] = 0xAAAAAAAA; /*R11*/
+	TCB_Stack[thread][STACK_SIZE -10] = 0xAAAAAAAA; /*R10*/
+	TCB_Stack[thread][STACK_SIZE -11] = 0xAAAAAAAA; /*R9*/
+	TCB_Stack[thread][STACK_SIZE -12] = 0xAAAAAAAA; /*R8*/
+	TCB_Stack[thread][STACK_SIZE -13] = 0xAAAAAAAA; /*R7*/
+	TCB_Stack[thread][STACK_SIZE -14] = 0xAAAAAAAA; /*R6*/
+	TCB_Stack[thread][STACK_SIZE -15] = 0xAAAAAAAA; /*R5*/
+	TCB_Stack[thread][STACK_SIZE -16] = 0xAAAAAAAA; /*R4*/
+}
+
+
+

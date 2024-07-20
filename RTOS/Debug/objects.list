@@ -1,0 +1,7 @@
+"./KRTOS/src/osKernel.o"
+"./Src/KRTOS_cfg.o"
+"./Src/Time_Base.o"
+"./Src/main.o"
+"./Src/syscalls.o"
+"./Src/sysmem.o"
+"./Startup/startup_stm32f103c8tx.o"

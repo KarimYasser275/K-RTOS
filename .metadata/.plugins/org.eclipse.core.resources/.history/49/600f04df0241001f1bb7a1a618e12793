@@ -1,0 +1,25 @@
+/*
+ * osKernel.h
+ *
+ *  Created on: Jul 12, 2024
+ *      Author: E0162112
+ */
+
+#ifndef INC_OSKERNEL_H_
+#define INC_OSKERNEL_H_
+
+#include "KRTOS_cfg.h"
+#include <stdint.h>
+
+typedef struct TCB_s
+{
+	uint32_t* 	stackPt;
+	TCB_t* 		next_thread;
+
+} TCB_t;
+
+
+void osKernel_ThreadCreate();
+
+
+#endif /* INC_OSKERNEL_H_ */

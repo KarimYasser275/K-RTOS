@@ -1,0 +1,40 @@
+#include "Time_Base.h"
+#include "stm32f103x6.h"
+
+#define ONE_SEC_LOAD											(8000000U)
+
+#define SYSTICK_CTRL_ENABLE										(1U<<0)
+#define SYSTICK_CTRL_TICK_INT									(1U<<1)
+#define SYSTICK_CTRL_CLK_SRC									(1U<<2)
+#define SYSTICK_CTRL_COUNT_FLAG									(1U<<16)
+
+uint32_t Systick_cnt = 0;
+
+void timebase_init(void)
+{
+	/*Reload the timer with number of cycles per second*/
+	SysTick->LOAD = ONE_SEC_LOAD -1;
+	/*Clear Systick current value*/
+	SysTick->VAL = 0;
+	/*Select internal clock source*/
+	SysTick->CTRL |=  SYSTICK_CTRL_CLK_SRC;
+	/*Enable  tick interrupt*/
+	SysTick->CTRL |=  SYSTICK_CTRL_TICK_INT;
+	/*Enable count flag*/
+	SysTick->CTRL |=  SYSTICK_CTRL_COUNT_FLAG;
+	/*Enable SysTick*/
+	SysTick->CTRL |=  SYSTICK_CTRL_ENABLE;
+	/*Enable global interrupt*/
+	__enable_irq();
+
+}
+
+void SysTick_Handler(void)
+{
+	SysTicK_incrementTick();
+}
+
+void SysTicK_incrementTick()
+{
+	Systick_cnt++;
+}

@@ -1,0 +1,37 @@
+/*
+ * osKernel.h
+ *
+ *  Created on: Jul 12, 2024
+ *      Author: E0162112
+ */
+
+#ifndef INC_OSKERNEL_H_
+#define INC_OSKERNEL_H_
+
+#include "KRTOS_cfg.h"
+#include <stdint.h>
+
+typedef void(*callback_function_t)(void) ;
+
+typedef struct TCB_s
+{
+	uint32_t* 				stackPt;
+	TCB_t* 					next_thread;
+	uint8_t					priority;
+	callback_function_t		callback_function;
+	uint32_t 				stack_size;
+	uint32_t				periodicity;
+	uint32_t				ex_time;
+
+} TCB_t;
+
+typedef enum osKernelReturn_e
+{
+	OSKERNEL_FAIL = 0,
+	OSKERNEL_PASS =1
+} osKernelReturn_t;
+
+osKernelReturn_t osKernel_ThreadCreate();
+
+
+#endif /* INC_OSKERNEL_H_ */

@@ -1,0 +1,16 @@
+/*
+ * osKernel_cfg.c
+ *
+ *  Created on: Jul 13, 2024
+ *      Author: E0162112
+ */
+
+#include "KRTOS_cfg.h"
+
+extern void Task1(), Task2(), Task3();
+
+TCB_t Tasks[NUM_OF_THREADS] = { {.callback_function = Task1, .stack_size = 100;},\
+								{.callback_function = Task2, .stack_size = 100;},\
+								{.callback_function = Task3, .stack_size = 100;}
+};
+

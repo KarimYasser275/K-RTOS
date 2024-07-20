@@ -1,0 +1,5 @@
+../Src/Time_Base.c:17:6:timebase_init	1
+../Src/Time_Base.c:38:6:SysTicK_incrementTick	1
+../Src/Time_Base.c:44:10:SysTick_TickGet	1
+../Src/Time_Base.c:53:6:Systick_Delay	2
+../Src/Time_Base.c:60:6:timebase_ReloadTimeChange	2

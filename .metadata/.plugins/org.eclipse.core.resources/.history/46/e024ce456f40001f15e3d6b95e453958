@@ -1,0 +1,13 @@
+/*
+ * osKernel.h
+ *
+ *  Created on: Jul 12, 2024
+ *      Author: E0162112
+ */
+
+#ifndef INC_OSKERNEL_H_
+#define INC_OSKERNEL_H_
+
+#include "KRTOS_cfg.h"
+
+#endif /* INC_OSKERNEL_H_ */
