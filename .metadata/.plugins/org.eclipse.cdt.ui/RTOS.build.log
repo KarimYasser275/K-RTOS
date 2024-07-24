@@ -1,37 +1,17 @@
-19:12:47 **** Incremental Build of configuration Debug for project RTOS ****
+20:36:55 **** Incremental Build of configuration Debug for project RTOS ****
 make -j8 all 
-arm-none-eabi-gcc "../KRTOS/src/osKernel.c" -mcpu=cortex-m3 -std=gnu11 -g3 -DDEBUG -DSTM32 -DSTM32F1 -DSTM32F103C8Tx -c -I"C:/RTOS/STM32Cube/RTOS/KRTOS/inc" -I../Inc -I"C:/RTOS/STM32Cube/RTOS/Inc/CMSIS/Include" -I"C:/RTOS/STM32Cube/RTOS/Inc/CMSIS/Device/ST/STM32F1xx/Include" -O0 -ffunction-sections -fdata-sections -Wall -fstack-usage -fcyclomatic-complexity -MMD -MP -MF"KRTOS/src/osKernel.d" -MT"KRTOS/src/osKernel.o" --specs=nano.specs -mfloat-abi=soft -mthumb -o "KRTOS/src/osKernel.o"
-../KRTOS/src/osKernel.c: In function 'osKernel_ThreadCreate':
-../KRTOS/src/osKernel.c:35:42: warning: pointer targets in assignment from 'int32_t *' {aka 'long int *'} to 'uint32_t *' {aka 'long unsigned int *'} differ in signedness [-Wpointer-sign]
-   35 |                 tcbs[Tasks_number].stack = (int32_t *)calloc(tcbs[Tasks_number].stack_size, sizeof(uint32_t));
-      |                                          ^
-../KRTOS/src/osKernel.c: In function 'osKernelStack_Init':
-../KRTOS/src/osKernel.c:50:29: warning: pointer targets in assignment from 'uint32_t *' {aka 'long unsigned int *'} to 'int32_t *' {aka 'long int *'} differ in signedness [-Wpointer-sign]
-   50 |         tcbs[index].stackpt = &tcbs[index].stack[stack_size - 16];
-      |                             ^
-../KRTOS/src/osKernel.c: In function 'osKernel_ThreadCreate':
-../KRTOS/src/osKernel.c:43:1: warning: control reaches end of non-void function [-Wreturn-type]
-   43 | }
-      | ^
-../KRTOS/src/osKernel.c: In function 'osKernel_init':
-../KRTOS/src/osKernel.c:89:1: warning: control reaches end of non-void function [-Wreturn-type]
-   89 | }
-      | ^
-At top level:
-../KRTOS/src/osKernel.c:91:13: warning: 'osSchedular_Launch' defined but not used [-Wunused-function]
-   91 | static void osSchedular_Launch(void)
-      |             ^~~~~~~~~~~~~~~~~~
+arm-none-eabi-gcc "../Src/main.c" -mcpu=cortex-m3 -std=gnu11 -g3 -DDEBUG -DSTM32 -DSTM32F1 -DSTM32F103C8Tx -c -I"C:/RTOS/STM32Cube/RTOS/KRTOS/inc" -I../Inc -I"C:/RTOS/STM32Cube/RTOS/Inc/CMSIS/Include" -I"C:/RTOS/STM32Cube/RTOS/Inc/CMSIS/Device/ST/STM32F1xx/Include" -O0 -ffunction-sections -fdata-sections -Wall -fstack-usage -fcyclomatic-complexity -MMD -MP -MF"Src/main.d" -MT"Src/main.o" --specs=nano.specs -mfloat-abi=soft -mthumb -o "Src/main.o"
 arm-none-eabi-gcc -o "RTOS.elf" @"objects.list"   -mcpu=cortex-m3 -T"C:\RTOS\STM32Cube\RTOS\STM32F103C8TX_FLASH.ld" --specs=nosys.specs -Wl,-Map="RTOS.map" -Wl,--gc-sections -static --specs=nano.specs -mfloat-abi=soft -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
 Finished building target: RTOS.elf
  
 arm-none-eabi-size   RTOS.elf 
 arm-none-eabi-objdump -h -S  RTOS.elf  > "RTOS.list"
    text	   data	    bss	    dec	    hex	filename
-   2312	     88	   2240	   4640	   1220	RTOS.elf
+   2408	     88	   2000	   4496	   1190	RTOS.elf
 Finished building: default.size.stdout
  
 Finished building: RTOS.list
  
 
-19:12:49 Build Finished. 0 errors, 5 warnings. (took 1s.337ms)
+20:36:56 Build Finished. 0 errors, 0 warnings. (took 1s.217ms)
 

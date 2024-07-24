@@ -12,13 +12,13 @@
 #define SYSTEM_CLK				8000000U
 #define MILLIS_PRESCALER		1000U
 #define TASKS_MAX_NUM			10U
-TCB_t tcbs[TASKS_MAX_NUM] = {0};
-TCB_t* current_thread;
+TCBType tcbs[TASKS_MAX_NUM] = {0};
+TCBType* current_thread;
 uint8_t Tasks_number = 0;
 uint32_t TCB_Stack[NUM_OF_THREADS][STACK_SIZE];
 
 uint32_t debug_scheduler_counter;
-static void osKernelStack_Init(uint32_t thread);
+static void osKernelStack_Init(uint32_t index , int32_t stack_size);
 static void osSchedular_Launch(void);
 
 
@@ -27,15 +27,16 @@ osKernelReturn_t osKernel_ThreadCreate( TCB_t* task)
 	__disable_irq();
 	if (Tasks_number <= TASKS_MAX_NUM)
 	{
-		tcbs[Tasks_number].callback_function = task->callback_function;
+		tcbs[Tasks_number].stackPt = (int32_t *)calloc(task->stack_size, sizeof(int32_t));
+		/*Assign PC register to point to task address*/
+		tcbs[Tasks_number].stackPt[task->stack_size * sizeof(int32_t) - 2] = task->callback_function;
+#if 0
 		tcbs[Tasks_number].ex_time = task->ex_time;
 		tcbs[Tasks_number].periodicity = task->periodicity;
 		tcbs[Tasks_number].priority = task->priority;
-		tcbs[Tasks_number].stack_size = task->stack_size;
-		tcbs[Tasks_number].stack = (int32_t *)calloc(tcbs[Tasks_number].stack_size, sizeof(uint32_t));
 		tcbs[Tasks_number].index = Tasks_number;
-
-		osKernelStack_Init(Tasks_number);
+#endif
+		osKernelStack_Init(Tasks_number, task->stack_size);
 
 		Tasks_number++;
 	}
@@ -43,24 +44,31 @@ osKernelReturn_t osKernel_ThreadCreate( TCB_t* task)
 }
 
 
-static void osKernelStack_Init(uint32_t index)
+static void osKernelStack_Init(uint32_t index , int32_t stack_size)
 {
-	uint32_t stack_size = tcbs[index].stack_size;
-	/*Assign stack pointer to top of stack*/
-	tcbs[index].stackpt = &tcbs[index].stack[stack_size - 16];
+	stack_size *= sizeof(uint32_t);
 
 	/*PSR register , set T-bit (bit21) to 1to operate in thumb mode*/
-	tcbs[index].stack[stack_size - 1] = 1U<<24;
-	/*Assign PC register to point to task address*/
-	tcbs[index].stack[stack_size - 2] = (int32_t)(tcbs[index].callback_function);
+	tcbs[index].stackPt[stack_size - 1] = 1U<<24;
 	/*Initialize rest of registers by dummy value (optional for debugging)*/
-	tcbs[index].stack[stack_size - 3] = 0xAAAAAAAA;  /*R14 (LR)*/
-	tcbs[index].stack[stack_size - 4] = 0xAAAAAAAA;  /*R12*/
-	tcbs[index].stack[stack_size - 5] = 0xAAAAAAAA;  /*R3*/
-	tcbs[index].stack[stack_size - 6] = 0xAAAAAAAA;  /*R2*/
-	tcbs[index].stack[stack_size - 7] = 0xAAAAAAAA;  /*R1*/
-	tcbs[index].stack[stack_size - 8] = 0xAAAAAAAA;  /*R0*/
+	tcbs[index].stackPt[stack_size - 3] = 0xAAAAAAAA;  /*R14 (LR)*/
+	tcbs[index].stackPt[stack_size - 4] = 0xAAAAAAAA;  /*R12*/
+	tcbs[index].stackPt[stack_size - 5] = 0xAAAAAAAA;  /*R3*/
+	tcbs[index].stackPt[stack_size - 6] = 0xAAAAAAAA;  /*R2*/
+	tcbs[index].stackPt[stack_size - 7] = 0xAAAAAAAA;  /*R1*/
+	tcbs[index].stackPt[stack_size - 8] = 0xAAAAAAAA;  /*R0*/
 
+	tcbs[index].stackPt[stack_size - 9]  = 0xAAAAAAAA;   /*R11*/
+	tcbs[index].stackPt[stack_size - 10] = 0xAAAAAAAA;  /*R10*/
+	tcbs[index].stackPt[stack_size - 11] = 0xAAAAAAAA;  /*R9*/
+	tcbs[index].stackPt[stack_size - 12] = 0xAAAAAAAA;  /*R8*/
+	tcbs[index].stackPt[stack_size - 13] = 0xAAAAAAAA;  /*R7*/
+	tcbs[index].stackPt[stack_size - 14] = 0xAAAAAAAA;  /*R6*/
+	tcbs[index].stackPt[stack_size - 15] = 0xAAAAAAAA;  /*R5*/
+	tcbs[index].stackPt[stack_size - 16] = 0xAAAAAAAA;  /*R4*/
+
+	/*Assign stack pointer to top of stack*/
+	tcbs[index].stackPt += stack_size -16 ;
 }
 
 
@@ -72,11 +80,11 @@ osKernelReturn_t osKernel_init(uint32_t quanta)
 	{
 		if (i+1< Tasks_number)
 		{
-			tcbs[i].next_thread = &tcbs[i+1];
+			tcbs[i].nextPt = &tcbs[i+1];
 		}
 		else
 		{
-			tcbs[i].next_thread = &tcbs[0];
+			tcbs[i].nextPt = &tcbs[0];
 		}
 	}
 	current_thread = &tcbs[0];
@@ -85,7 +93,7 @@ osKernelReturn_t osKernel_init(uint32_t quanta)
 	/*set SysTick to low priority*/
 	NVIC_SetPriority(SysTick_IRQn,15);
 	/*Pass Scheduler to SysTick handler*/
-//	osSchedular_Launch();
+	osSchedular_Launch();
 }
 
 static void osSchedular_Launch(void)

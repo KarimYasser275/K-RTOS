@@ -1,6 +1,6 @@
 C:/RTOS/STM32Cube/RTOS/Inc/CMSIS/Include/core_cm3.h:1639:22:__NVIC_SetPriority	16	static
 ../KRTOS/src/osKernel.c:25:18:osKernel_ThreadCreate	24	static,ignoring_inline_asm
-../KRTOS/src/osKernel.c:46:13:osKernelStack_Init	24	static
-../KRTOS/src/osKernel.c:67:18:osKernel_init	24	static
-../KRTOS/src/osKernel.c:91:13:osSchedular_Launch	4	static,ignoring_inline_asm
-../KRTOS/src/osKernel.c:127:29:SysTick_Handler	0	static,ignoring_inline_asm
+../KRTOS/src/osKernel.c:47:13:osKernelStack_Init	16	static
+../KRTOS/src/osKernel.c:75:18:osKernel_init	24	static
+../KRTOS/src/osKernel.c:99:13:osSchedular_Launch	4	static,ignoring_inline_asm
+../KRTOS/src/osKernel.c:135:29:SysTick_Handler	0	static,ignoring_inline_asm

@@ -17,7 +17,7 @@ typedef void(*callback_function_t)(void) ;
 
 typedef struct TCB_s
 {
-	uint32_t* 				stack;
+	int32_t* 				stack;
 	struct TCB_s*			next_thread;
 	callback_function_t		callback_function;
 	uint32_t 				stack_size;
@@ -27,6 +27,12 @@ typedef struct TCB_s
 	uint8_t					index;
 	uint8_t					priority;
 } TCB_t;
+
+typedef struct tcb
+{
+	int32_t *stackPt;
+	struct tcb *nextPt;
+}TCBType;
 
 typedef enum osKernelReturn_e
 {
