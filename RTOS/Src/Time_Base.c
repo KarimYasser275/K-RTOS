@@ -9,7 +9,6 @@
 #define SYSTICK_CTRL_COUNT_FLAG									((uint32_t)1U<<16)
 #define NULL ((void *)0)
 
-typedef void(*callback_function_t)(void) ;
 callback_function_t SysTick_callbackFn = NULL;
 
 uint32_t Systick_cnt = 0;

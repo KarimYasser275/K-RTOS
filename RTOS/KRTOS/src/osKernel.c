@@ -21,26 +21,29 @@ uint32_t debug_scheduler_counter;
 static void osKernelStack_Init(uint32_t index , int32_t stack_size);
 static void osSchedular_Launch(void);
 
-
 osKernelReturn_t osKernel_ThreadCreate( TCB_t* task)
 {
-	__disable_irq();
-	if (Tasks_number <= TASKS_MAX_NUM)
+	osKernelReturn_t retval = OSKERNEL_FAIL;
+	if (NULL != task)
 	{
-		tcbs[Tasks_number].stackPt = (int32_t *)calloc(task->stack_size, sizeof(int32_t));
-		/*Assign PC register to point to task address*/
-		tcbs[Tasks_number].stackPt[task->stack_size * sizeof(int32_t) - 2] = task->callback_function;
-#if 0
-		tcbs[Tasks_number].ex_time = task->ex_time;
-		tcbs[Tasks_number].periodicity = task->periodicity;
-		tcbs[Tasks_number].priority = task->priority;
-		tcbs[Tasks_number].index = Tasks_number;
-#endif
-		osKernelStack_Init(Tasks_number, task->stack_size);
-
-		Tasks_number++;
-	}
-	__enable_irq();
+		__disable_irq();
+		if (Tasks_number <= TASKS_MAX_NUM)
+		{
+			tcbs[Tasks_number].stackPt = (int32_t *)calloc(task->stack_size, sizeof(int32_t));
+			/*Assign PC register to point to task address*/
+			tcbs[Tasks_number].stackPt[task->stack_size * sizeof(int32_t) - 2] = task->callback_function;
+	#if 0
+			tcbs[Tasks_number].ex_time = task->ex_time;
+			tcbs[Tasks_number].periodicity = task->periodicity;
+			tcbs[Tasks_number].priority = task->priority;
+			tcbs[Tasks_number].index = Tasks_number;
+	#endif
+			osKernelStack_Init(Tasks_number, task->stack_size);
+			retval = OSKERNEL_PASS;
+			Tasks_number++;
+		}
+		__enable_irq();
+		}
 }
 
 

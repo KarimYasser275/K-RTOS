@@ -9,11 +9,11 @@
 #define TIME_BASE_H_
 
 #include <stdint.h>
+typedef void(*callback_function_t)(void) ;
 
 void timebase_init(void);
 void SysTicK_incrementTick(void);
 void Systick_Delay(uint32_t seconds);
 void timebase_ReloadTimeChange(uint32_t time);
-
 
 #endif /* TIME_BASE_H_ */
