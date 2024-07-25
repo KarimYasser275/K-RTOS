@@ -34,15 +34,15 @@ void Task0();
 int main(void)
 {
 	TCB_t Thread0 = {0};
-	Thread0.stack_size = 20;
+	Thread0.stack_size = 200;
 	Thread0.callback_function = Task0;
 
 	TCB_t Thread1 = {0};
-	Thread1.stack_size = 20;
+	Thread1.stack_size =400;
 	Thread1.callback_function = Task1;
 
 	TCB_t Thread2 = {0};
-	Thread2.stack_size = 20;
+	Thread2.stack_size = 200;
 	Thread2.callback_function = Task2;
 
 
@@ -71,6 +71,7 @@ void Task0()
 	while(1)
 	{
 		Task0_counter++;
+		osKernel_ThreadYield();
 	}
 }
 

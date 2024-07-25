@@ -62,13 +62,17 @@ void timebase_ReloadTimeChange(uint32_t time)
 	{
 		__disable_irq();
 		/*disable systick*/
-		SysTick->CTRL &= (~SYSTICK_CTRL_ENABLE);
-		/*Reload the timer with number of cycles per second*/
-		SysTick->LOAD = time -1;
+		SysTick->CTRL = 0;
 		/*Clear Systick current value*/
 		SysTick->VAL = 0;
+		/*Reload the timer with number of cycles per second*/
+		SysTick->LOAD = time -1;
+		/*set SysTick to low priority*/
+		NVIC_SetPriority(SysTick_IRQn,15);
 		/*Enable SysTick*/
+		SysTick->CTRL |= SYSTICK_CTRL_CLK_SRC;
 		SysTick->CTRL |=  SYSTICK_CTRL_ENABLE;
+		SysTick->CTRL |= SYSTICK_CTRL_TICK_INT;
 		__enable_irq();
 	}
 }

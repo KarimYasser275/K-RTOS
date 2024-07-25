@@ -12,6 +12,9 @@
 #define SYSTEM_CLK				8000000U
 #define MILLIS_PRESCALER		1000U
 #define TASKS_MAX_NUM			10U
+#define PEND_SYSTICK_BIT		26U
+
+
 TCBType tcbs[TASKS_MAX_NUM] = {0};
 TCBType* current_thread;
 uint8_t Tasks_number = 0;
@@ -29,7 +32,7 @@ osKernelReturn_t osKernel_ThreadCreate( TCB_t* task)
 		__disable_irq();
 		if (Tasks_number <= TASKS_MAX_NUM)
 		{
-			tcbs[Tasks_number].stackPt = (int32_t *)calloc(task->stack_size, sizeof(int32_t));
+			tcbs[Tasks_number].stackPt = (int32_t *)malloc(task->stack_size* sizeof(int32_t));
 			/*Assign PC register to point to task address*/
 			tcbs[Tasks_number].stackPt[task->stack_size * sizeof(int32_t) - 2] = task->callback_function;
 	#if 0
@@ -93,8 +96,6 @@ osKernelReturn_t osKernel_init(uint32_t quanta)
 	current_thread = &tcbs[0];
 	/* configure SysTick to 1ms*/
 	timebase_ReloadTimeChange(quanta * (SYSTEM_CLK/MILLIS_PRESCALER));
-	/*set SysTick to low priority*/
-	NVIC_SetPriority(SysTick_IRQn,15);
 	/*Pass Scheduler to SysTick handler*/
 	osSchedular_Launch();
 }
@@ -174,7 +175,14 @@ __attribute__((naked)) void SysTick_Handler(void)
 	/*Return from exception and restore r0,r1,r2,r3,r12,lr,pc,psr */
 	__asm("BX	LR");
 
-
-
 }
 
+void osKernel_ThreadYield(void)
+{
+//	/*Triggers Systick interrupt to switch to next thread*/
+//	/*Clear current Systick value*/
+	SysTick->VAL = 0;
+//	/*Pend Systick Interrupt*/
+	SCB->ICSR |= 1 << PEND_SYSTICK_BIT;
+
+}

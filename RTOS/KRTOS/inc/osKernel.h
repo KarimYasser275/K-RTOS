@@ -42,5 +42,6 @@ typedef enum osKernelReturn_e
 
 osKernelReturn_t osKernel_ThreadCreate();
 osKernelReturn_t osKernel_init(uint32_t quanta);
+void osKernel_ThreadYield(void);
 
 #endif /* INC_OSKERNEL_H_ */

@@ -10,8 +10,17 @@
 
 #include "osKernel.h"
 
+typedef enum KRTOS_schd_e
+{
+	SCHD_TYPE_ROUND_ROBIN,
+	SCHD_TYPE_COOPRATIVE,
+	SCHD_TYPE_PERIODIC
+}KRTOS_Schd_t;
+
 
 #define NUM_OF_THREADS				3
 #define STACK_SIZE					100 /* 100 word = 400 byte*/
+
+#define KRTOS_SCHEDULER_TYPE		ROUND_ROBIN
 
 #endif /* KRTOS_CFG_H_ */
