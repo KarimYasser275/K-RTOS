@@ -26,25 +26,27 @@
   #warning "FPU is not initialized, but the project is compiling for an FPU. Please initialize the FPU before use."
 #endif
 
-uint32_t Task0_counter,Task1_counter,Task2_counter;
+uint32_t Task0_counter,Task1_counter,Task2_counter,Task3_counter;
 void Task1();
 void Task2();
 void Task0();
+void Task3(void);
 
 int main(void)
 {
-	TCB_t Thread0 = {0};
+	TCB_t Thread0,Thread1,Thread2,Thread3  = {0};
 	Thread0.stack_size = 200;
 	Thread0.callback_function = Task0;
 
-	TCB_t Thread1 = {0};
 	Thread1.stack_size =400;
 	Thread1.callback_function = Task1;
 
-	TCB_t Thread2 = {0};
 	Thread2.stack_size = 200;
 	Thread2.callback_function = Task2;
 
+	Thread3.stack_size = 100;
+	Thread3.callback_function = Task3;
+	Thread3.periodicity = 100;
 
 	RCC->AHBENR |= RCC_APB2ENR_IOPAEN;
 	GPIOC->CRH = 0;
@@ -54,6 +56,7 @@ int main(void)
 	osKernel_ThreadCreate(&Thread0);
 	osKernel_ThreadCreate(&Thread1);
 	osKernel_ThreadCreate(&Thread2);
+	osKernel_PeriodicThreadCreate(&Thread3);
 	osKernel_init(10);
 
     while(1)
@@ -91,3 +94,7 @@ void Task2()
 
 }
 
+void Task3(void)
+{
+	Task3_counter++;
+}

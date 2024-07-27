@@ -7,6 +7,7 @@
 
 
 #include "osKernel.h"
+#include <stdint.h>
 #include <stdlib.h>
 
 #define SYSTEM_CLK				8000000U
@@ -17,13 +18,29 @@
 
 TCBType tcbs[TASKS_MAX_NUM] = {0};
 TCBType* current_thread;
+TCB_peridoic_t periodic_tasks[TASKS_MAX_NUM] = {0};
+
+uint32_t periodic_counter = 0;
+
 uint8_t Tasks_number = 0;
+uint8_t PeriodicTasks_number = 0;
 uint32_t TCB_Stack[NUM_OF_THREADS][STACK_SIZE];
 
 uint32_t debug_scheduler_counter;
 static void osKernelStack_Init(uint32_t index , int32_t stack_size);
 static void osSchedular_Launch(void);
+static void osKernel_peridoicScheduler(void);
 
+/**
+ * Creates a new thread and adds it to the task control block (TCB).
+ *
+ * @param task Pointer to the task structure containing the details of the thread to be created.
+ *
+ * @return Returns OSKERNEL_PASS if the thread is successfully created and added to the TCB,
+ *         and OSKERNEL_FAIL otherwise.
+ *
+ * @throws None
+ */
 osKernelReturn_t osKernel_ThreadCreate( TCB_t* task)
 {
 	osKernelReturn_t retval = OSKERNEL_FAIL;
@@ -35,12 +52,6 @@ osKernelReturn_t osKernel_ThreadCreate( TCB_t* task)
 			tcbs[Tasks_number].stackPt = (int32_t *)malloc(task->stack_size* sizeof(int32_t));
 			/*Assign PC register to point to task address*/
 			tcbs[Tasks_number].stackPt[task->stack_size * sizeof(int32_t) - 2] = task->callback_function;
-	#if 0
-			tcbs[Tasks_number].ex_time = task->ex_time;
-			tcbs[Tasks_number].periodicity = task->periodicity;
-			tcbs[Tasks_number].priority = task->priority;
-			tcbs[Tasks_number].index = Tasks_number;
-	#endif
 			osKernelStack_Init(Tasks_number, task->stack_size);
 			retval = OSKERNEL_PASS;
 			Tasks_number++;
@@ -49,7 +60,35 @@ osKernelReturn_t osKernel_ThreadCreate( TCB_t* task)
 		}
 }
 
+/**
+ * Creates a periodic thread using the provided task control block.
+ *
+ * @param task Pointer to the task control block containing the details of the thread to be created.
+ *
+ * @return Returns OSKERNEL_PASS if the thread is successfully created, and OSKERNEL_FAIL otherwise.
+ *
+ * @throws None
+ */
+osKernelReturn_t osKernel_PeriodicThreadCreate(TCB_t* task)
+{
+	if (PeriodicTasks_number < TASKS_MAX_NUM)
+	{
+		periodic_tasks[PeriodicTasks_number].functionPt = task->callback_function;
+		periodic_tasks[PeriodicTasks_number].periodicity = task->periodicity;
+	}
+	PeriodicTasks_number++;
+}
 
+/**
+ * Initializes the kernel stack for a given task.
+ *
+ * @param index The index of the task in the tcbs array.
+ * @param stack_size The size of the stack in bytes.
+ *
+ * @return void
+ *
+ * @throws None
+ */
 static void osKernelStack_Init(uint32_t index , int32_t stack_size)
 {
 	stack_size *= sizeof(uint32_t);
@@ -78,6 +117,15 @@ static void osKernelStack_Init(uint32_t index , int32_t stack_size)
 }
 
 
+/**
+ * Initializes the kernel by creating a circular linked list of task control blocks and configuring the SysTick timer.
+ *
+ * @param quanta The time period in milliseconds for the SysTick timer.
+ *
+ * @return The return value indicates whether the initialization was successful or not.
+ *
+ * @throws None
+ */
 osKernelReturn_t osKernel_init(uint32_t quanta)
 {
 	/*Create circuler linked list to link task control blocks*/
@@ -100,6 +148,13 @@ osKernelReturn_t osKernel_init(uint32_t quanta)
 	osSchedular_Launch();
 }
 
+/**
+ * Launches the scheduler by restoring the state of the current thread from its task control block and returning from the exception.
+ *
+ * @return void
+ *
+ * @throws None
+ */
 static void osSchedular_Launch(void)
 {
 	/*Load address of current_thread into R0*/
@@ -136,6 +191,18 @@ static void osSchedular_Launch(void)
 	__asm("BX	LR");
 }
 
+/**
+ * The SysTick_Handler function is responsible for handling the SysTick interrupt.
+ * It suspends the current thread, saves the registers, loads the address of the current thread into r0,
+ * loads the value of the current thread into r1, stores the Cortex-M SP at the address of r1,
+ * chooses the next thread by loading the value from the location 4 bytes above r1,
+ * stores the chosen thread into r0, loads the Cortex-M SP from the address of r1,
+ * restores the registers, enables global interrupts, and returns from the exception.
+ *
+ * @return void
+ *
+ * @throws None
+ */
 __attribute__((naked)) void SysTick_Handler(void)
 {
 	/*SUSPEND CURRENT THREAD*/
@@ -156,16 +223,15 @@ __attribute__((naked)) void SysTick_Handler(void)
 	__asm("STR SP,[R1]");
 
     /*CHOOSE NEXT THREAD*/
+	__asm("PUSH {R0,LR}");
 
-    /*Load r1 from a location 4bytes above address r1, i.e r1 = current_thread->next*/
-	__asm("LDR R1,[R1,#4]");
+	__asm("BL	osKernel_peridoicScheduler");
 
-	/*Store r1 at address equals r0, i.e current_thread =  r1*/
-	__asm("STR	R1,[R0]");
-
-	/*Load Cortex-M SP from address equals r1, i.e SP =  current_thread->stackPt*/
-	__asm("LDR SP,[R1]");
-
+	__asm("POP {R0,LR}");
+	/*R1 =  currentPt i.e. New Thread*/
+	 __asm("LDR		R1,[R0]");
+	/*SP  = currentPt->StackPt*/
+	 __asm("LDR		SP,[R1]");
 	/*Restore r4,r5,r6,r7,r8,r9,r10,11*/
 	__asm("POP {R4-R11}");
 
@@ -175,8 +241,16 @@ __attribute__((naked)) void SysTick_Handler(void)
 	/*Return from exception and restore r0,r1,r2,r3,r12,lr,pc,psr */
 	__asm("BX	LR");
 
+
 }
 
+/**
+ * Triggers a Systick interrupt to switch to the next thread.
+ *
+ * @return void
+ *
+ * @throws None
+ */
 void osKernel_ThreadYield(void)
 {
 //	/*Triggers Systick interrupt to switch to next thread*/
@@ -185,4 +259,60 @@ void osKernel_ThreadYield(void)
 //	/*Pend Systick Interrupt*/
 	SCB->ICSR |= 1 << PEND_SYSTICK_BIT;
 
+}
+
+/**
+ * Removes a thread from the kernel.
+ *
+ * @param task a pointer to the thread to be removed
+ *
+ * @return the status of the removal operation
+ *
+ * @throws None
+ */
+osKernelReturn_t osKernel_ThreadRemove( TCBType* task)
+{
+	if (NULL == task) return OSKERNEL_FAIL;
+
+	if (current_thread == task)
+	{
+		current_thread = task->nextPt;
+		free(task->stackPt);
+		return OSKERNEL_PASS;
+	}
+
+	TCBType* current = current_thread;
+	while (current->nextPt != task)
+	{
+		current = current->nextPt;
+		if (current == current_thread) return OSKERNEL_FAIL;
+	}
+
+	current->nextPt = task->nextPt;
+	free(task->stackPt);
+	return OSKERNEL_PASS;
+}
+
+osKernelReturn_t osKernel_ThreadSuspend ( TCBType* task)
+{
+
+}
+
+
+static void osKernel_peridoicScheduler(void)
+{
+	periodic_counter++;
+	for (uint8_t i =0; i < PeriodicTasks_number; i++)
+	{
+		if (!((periodic_counter) % periodic_tasks[i].periodicity))
+		{
+			periodic_tasks[i].functionPt();
+		}
+	}
+	if (periodic_counter == 1000)
+	{
+		periodic_counter = 0;
+	}
+
+	current_thread = current_thread->nextPt;
 }

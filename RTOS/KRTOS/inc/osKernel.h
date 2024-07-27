@@ -34,14 +34,23 @@ typedef struct tcb
 	struct tcb *nextPt;
 }TCBType;
 
+typedef struct TCB_peridoic_s
+{
+	callback_function_t		functionPt;
+	uint32_t 				periodicity;
+}TCB_peridoic_t;
+
 typedef enum osKernelReturn_e
 {
 	OSKERNEL_FAIL = 0,
 	OSKERNEL_PASS =1
 } osKernelReturn_t;
 
-osKernelReturn_t osKernel_ThreadCreate();
+osKernelReturn_t osKernel_ThreadCreate( TCB_t* task);
+osKernelReturn_t osKernel_PeriodicThreadCreate(TCB_t* task);
 osKernelReturn_t osKernel_init(uint32_t quanta);
 void osKernel_ThreadYield(void);
+osKernelReturn_t osKernel_ThreadRemove( TCBType* task);
+osKernelReturn_t osKernel_ThreadSuspend( TCBType* task);
 
 #endif /* INC_OSKERNEL_H_ */
