@@ -58,6 +58,7 @@ osKernelReturn_t osKernel_ThreadCreate( TCB_t* task)
 		}
 		__enable_irq();
 		}
+		return retval;
 }
 
 /**

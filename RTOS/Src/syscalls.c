@@ -20,152 +20,250 @@
  ******************************************************************************
  */
 
-/* Includes */
-#include <sys/stat.h>
-#include <stdlib.h>
-#include <errno.h>
-#include <stdio.h>
-#include <signal.h>
-#include <time.h>
-#include <sys/time.h>
-#include <sys/times.h>
+/* Standard library includes for system calls */
+#include <sys/stat.h>    /* For file status and mode definitions */
+#include <stdlib.h>      /* For general utilities */
+#include <errno.h>       /* For error handling */
+#include <stdio.h>       /* For standard I/O operations */
+#include <signal.h>      /* For signal handling */
+#include <time.h>        /* For time operations */
+#include <sys/time.h>    /* For time-related system calls */
+#include <sys/times.h>   /* For process times */
 
+/* External I/O function declarations with weak attribute for possible override */
+extern int __io_putchar(int ch) __attribute__((weak));  /* Character output function */
+extern int __io_getchar(void) __attribute__((weak));    /* Character input function */
 
-/* Variables */
-extern int __io_putchar(int ch) __attribute__((weak));
-extern int __io_getchar(void) __attribute__((weak));
+/* Environment variables setup */
+char *__env[1] = { 0 };          /* Empty environment array */
+char **environ = __env;          /* Global environment pointer */
 
+/* System call implementations */
 
-char *__env[1] = { 0 };
-char **environ = __env;
-
-
-/* Functions */
+/**
+ * @brief Initialize monitor handles for debugging
+ * @note Empty implementation as this is a minimal system
+ */
 void initialise_monitor_handles()
 {
 }
 
+/**
+ * @brief Get process ID
+ * @return Always returns 1 as this is a single-process system
+ */
 int _getpid(void)
 {
-  return 1;
+  return 1;  // Return 1 for single-process system
 }
 
+/**
+ * @brief Send signal to process
+ * @param pid Process ID (unused)
+ * @param sig Signal number (unused)
+ * @return -1 with EINVAL error as signals are not supported
+ */
 int _kill(int pid, int sig)
 {
-  (void)pid;
-  (void)sig;
-  errno = EINVAL;
-  return -1;
+  (void)pid;  // Unused parameter
+  (void)sig;  // Unused parameter
+  errno = EINVAL;  // Set error to invalid argument
+  return -1;  // Return error
 }
 
+/**
+ * @brief Terminate process
+ * @param status Exit status
+ * @note Enters infinite loop after termination
+ */
 void _exit (int status)
 {
-  _kill(status, -1);
-  while (1) {}    /* Make sure we hang here */
+  _kill(status, -1);  // Call kill with status
+  while (1) {}    /* Make sure we hang here */  // Infinite loop
 }
 
+/**
+ * @brief Read from file
+ * @param file File descriptor (unused)
+ * @param ptr Buffer to store read data
+ * @param len Number of bytes to read
+ * @return Number of bytes read
+ */
 __attribute__((weak)) int _read(int file, char *ptr, int len)
 {
-  (void)file;
-  int DataIdx;
+  (void)file;  // Unused parameter
+  int DataIdx;  // Loop counter
 
-  for (DataIdx = 0; DataIdx < len; DataIdx++)
+  for (DataIdx = 0; DataIdx < len; DataIdx++)  // Loop through requested length
   {
-    *ptr++ = __io_getchar();
+    *ptr++ = __io_getchar();  // Read character and store in buffer
   }
 
-  return len;
+  return len;  // Return number of bytes read
 }
 
+/**
+ * @brief Write to file
+ * @param file File descriptor (unused)
+ * @param ptr Buffer containing data to write
+ * @param len Number of bytes to write
+ * @return Number of bytes written
+ */
 __attribute__((weak)) int _write(int file, char *ptr, int len)
 {
-  (void)file;
-  int DataIdx;
+  (void)file;  // Unused parameter
+  int DataIdx;  // Loop counter
 
-  for (DataIdx = 0; DataIdx < len; DataIdx++)
+  for (DataIdx = 0; DataIdx < len; DataIdx++)  // Loop through requested length
   {
-    __io_putchar(*ptr++);
+    __io_putchar(*ptr++);  // Write character from buffer
   }
-  return len;
+  return len;  // Return number of bytes written
 }
 
-int _close(int file)
+/**
+ * @brief Close file
+ * @param file File descriptor (unused)
+ * @return -1 as file operations are not supported
+ */
+int _close(int file)  // Function to close file
 {
-  (void)file;
-  return -1;
+  (void)file;  // Unused parameter
+  return -1;  // Return error
 }
 
-
-int _fstat(int file, struct stat *st)
+/**
+ * @brief Get file status
+ * @param file File descriptor (unused)
+ * @param st Pointer to stat structure
+ * @return 0 on success
+ */
+int _fstat(int file, struct stat *st)  // Function to get file status
 {
-  (void)file;
-  st->st_mode = S_IFCHR;
-  return 0;
+  (void)file;  // Unused parameter
+  st->st_mode = S_IFCHR;  /* Treat as character device */ 
+  return 0;  // Return success
 }
 
-int _isatty(int file)
+/**
+ * @brief Check if file is a terminal
+ * @param file File descriptor (unused)
+ * @return 1 as all files are treated as terminals
+ */
+int _isatty(int file)  // Function to check if file is terminal
 {
-  (void)file;
-  return 1;
+  (void)file;  // Unused parameter
+  return 1;  // Return true
 }
 
-int _lseek(int file, int ptr, int dir)
+/**
+ * @brief Set file position
+ * @param file File descriptor (unused)
+ * @param ptr Position (unused)
+ * @param dir Direction (unused)
+ * @return 0 as file operations are not supported
+ */
+int _lseek(int file, int ptr, int dir)  // Function to set file position
 {
-  (void)file;
-  (void)ptr;
-  (void)dir;
-  return 0;
+  (void)file;  // Unused parameter
+  (void)ptr;   // Unused parameter
+  (void)dir;   // Unused parameter
+  return 0;    // Return success
 }
 
-int _open(char *path, int flags, ...)
+/**
+ * @brief Open file
+ * @param path File path (unused)
+ * @param flags Open flags (unused)
+ * @return -1 as file operations are not supported
+ */
+int _open(char *path, int flags, ...)  // Function to open file
 {
-  (void)path;
-  (void)flags;
-  /* Pretend like we always fail */
-  return -1;
+  (void)path;   // Unused parameter
+  (void)flags;  // Unused parameter
+  /* Pretend like we always fail */  // Comment about failure
+  return -1;    // Return error
 }
 
-int _wait(int *status)
+/**
+ * @brief Wait for child process
+ * @param status Pointer to store exit status (unused)
+ * @return -1 with ECHILD error as process operations are not supported
+ */
+int _wait(int *status)  // Function to wait for child process
 {
-  (void)status;
-  errno = ECHILD;
-  return -1;
+  (void)status;  // Unused parameter
+  errno = ECHILD;  // Set error to no child process
+  return -1;  // Return error
 }
 
-int _unlink(char *name)
+/**
+ * @brief Delete file
+ * @param name File name (unused)
+ * @return -1 with ENOENT error as file operations are not supported
+ */
+int _unlink(char *name)  // Function to delete file
 {
-  (void)name;
-  errno = ENOENT;
-  return -1;
+  (void)name;  // Unused parameter
+  errno = ENOENT;  // Set error to no such file
+  return -1;  // Return error
 }
 
-int _times(struct tms *buf)
+/**
+ * @brief Get process times
+ * @param buf Pointer to times structure (unused)
+ * @return -1 as timing operations are not supported
+ */
+int _times(struct tms *buf)  // Function to get process times
 {
-  (void)buf;
-  return -1;
+  (void)buf;  // Unused parameter
+  return -1;  // Return error
 }
 
-int _stat(char *file, struct stat *st)
+/**
+ * @brief Get file status
+ * @param file File name (unused)
+ * @param st Pointer to stat structure
+ * @return 0 on success
+ */
+int _stat(char *file, struct stat *st)  // Function to get file status
 {
-  (void)file;
-  st->st_mode = S_IFCHR;
-  return 0;
+  (void)file;  // Unused parameter
+  st->st_mode = S_IFCHR;  /* Treat as character device */  // Set mode to character device
+  return 0;  // Return success
 }
 
-int _link(char *old, char *new)
+/**
+ * @brief Create hard link
+ * @param old Old path (unused)
+ * @param new New path (unused)
+ * @return -1 with EMLINK error as file operations are not supported
+ */
+int _link(char *old, char *new)  // Function to create hard link
 {
-  (void)old;
-  (void)new;
-  errno = EMLINK;
-  return -1;
+  (void)old;  // Unused parameter
+  (void)new;  // Unused parameter
+  errno = EMLINK;  // Set error to too many links
+  return -1;  // Return error
 }
 
+/**
+ * @brief Create new process
+ * @return -1 with EAGAIN error as process operations are not supported
+ */
 int _fork(void)
 {
   errno = EAGAIN;
   return -1;
 }
 
+/**
+ * @brief Execute program
+ * @param name Program name (unused)
+ * @param argv Argument vector (unused)
+ * @param env Environment variables (unused)
+ * @return -1 with ENOMEM error as process operations are not supported
+ */
 int _execve(char *name, char **argv, char **env)
 {
   (void)name;
