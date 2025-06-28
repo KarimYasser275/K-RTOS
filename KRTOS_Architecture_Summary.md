@@ -189,7 +189,7 @@ typedef struct TCB_s {
     int32_t* stackpt;           // Current stack pointer
     uint8_t index;              // Thread index
     uint8_t priority;           // Thread priority
-} TCB_t;
+} TCB_config_t;
 
 // Simplified TCB for internal use
 typedef struct tcb {

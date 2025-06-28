@@ -34,15 +34,18 @@ void Task3(void);
 
 int main(void)
 {
-	TCB_t Thread0,Thread1,Thread2,Thread3  = {0};
+	TCB_config_t Thread0,Thread1,Thread2,Thread3;
 	Thread0.stack_size = 200;
 	Thread0.callback_function = Task0;
+	Thread0.periodicity = 1;
 
 	Thread1.stack_size =400;
 	Thread1.callback_function = Task1;
+	Thread1.periodicity = 1;
 
 	Thread2.stack_size = 200;
 	Thread2.callback_function = Task2;
+	Thread2.periodicity = 1;
 
 	Thread3.stack_size = 100;
 	Thread3.callback_function = Task3;
@@ -56,7 +59,7 @@ int main(void)
 	osKernel_ThreadCreate(&Thread0);
 	osKernel_ThreadCreate(&Thread1);
 	osKernel_ThreadCreate(&Thread2);
-	osKernel_PeriodicThreadCreate(&Thread3);
+	osKernel_ThreadCreate(&Thread3);
 	osKernel_init(10);
 
     while(1)
@@ -83,6 +86,8 @@ void Task1()
 	while(1)
 	{
 		Task1_counter++;
+		osKernel_ThreadYield();
+
 	}
 }
 void Task2()
@@ -90,11 +95,16 @@ void Task2()
 	while(1)
 	{
 		Task2_counter++;
+		osKernel_ThreadYield();
+
 	}
 
 }
 
 void Task3(void)
 {
-	Task3_counter++;
+	while(1){
+		Task3_counter++;
+		osKernel_ThreadYield();
+	}
 }

@@ -13,32 +13,36 @@
 #include <stdint.h>
 #include "Time_Base.h"
 
+#define NULL ((void*)0)
+
 typedef void(*callback_function_t)(void) ;
 
+typedef enum
+{
+	THREAD_INACTIVE = 1,
+	THREAD_PENDING,
+	THREAD_SUSPENDED
+}Thread_State_t;
 typedef struct TCB_s
 {
-	int32_t* 				stack;
-	struct TCB_s*			next_thread;
 	callback_function_t		callback_function;
 	uint32_t 				stack_size;
-	uint32_t				periodicity;
-	uint32_t				ex_time;
-	int32_t*				stackpt;
-	uint8_t					index;
+	uint16_t				periodicity;
+#if (KRTOS_SCHEDULER_TYPE == SCHD_TYPE_PREMEMPTIVE)
 	uint8_t					priority;
-} TCB_t;
+#endif
+} TCB_config_t;
 
 typedef struct tcb
 {
 	int32_t *stackPt;
+	uint16_t periodicity;
+	Thread_State_t state;
+#if (KRTOS_SCHEDULER_TYPE == SCHD_TYPE_PREMEMPTIVE)
+	uint8_t  priority;
+#endif
 	struct tcb *nextPt;
 }TCBType;
-
-typedef struct TCB_peridoic_s
-{
-	callback_function_t		functionPt;
-	uint32_t 				periodicity;
-}TCB_peridoic_t;
 
 typedef enum osKernelReturn_e
 {
@@ -46,11 +50,13 @@ typedef enum osKernelReturn_e
 	OSKERNEL_PASS =1
 } osKernelReturn_t;
 
-osKernelReturn_t osKernel_ThreadCreate( TCB_t* task);
-osKernelReturn_t osKernel_PeriodicThreadCreate(TCB_t* task);
+osKernelReturn_t osKernel_ThreadCreate( TCB_config_t* task);
+osKernelReturn_t osKernel_PeriodicThreadCreate(TCB_config_t* task);
 osKernelReturn_t osKernel_init(uint32_t quanta);
 void osKernel_ThreadYield(void);
 osKernelReturn_t osKernel_ThreadRemove( TCBType* task);
 osKernelReturn_t osKernel_ThreadSuspend( TCBType* task);
+osKernelReturn_t osKernel_backgroundTaskSet( callback_function_t function);
+
 
 #endif /* INC_OSKERNEL_H_ */
