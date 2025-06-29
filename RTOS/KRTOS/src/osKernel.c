@@ -310,11 +310,7 @@ __attribute__((naked)) void PendSV_Handler(void)
  */
 void osKernel_ThreadYield(void)
 {
-//	periodic_counter--; /*To counter act the periodic counter increment in scheduler as systick was fired manually*/
-	/*Triggers Systick interrupt to switch to next thread*/
-	/*Clear current Systick value*/
-//	SysTick->VAL = 0;
-	/*Pend Systick Interrupt*/
+	/*Pend PendSV Interrupt*/
 	SCB->ICSR |= 1 << PEND_SV_BIT;
 
 }
@@ -353,12 +349,21 @@ osKernelReturn_t osKernel_ThreadRemove( TCBType* task)
 
 osKernelReturn_t osKernel_ThreadSuspend ( TCBType* task)
 {
-	osKernelReturn_t retval = OSKERNEL_PASS;
+	osKernelReturn_t retval = OSKERNEL_FAIL;
+	if(task != NULL)
+	{
+		task->state = THREAD_INACTIVE;
+		retval = OSKERNEL_PASS;
+	}
 	return retval;
 }
 
 static void osKernel_Dispatcher(void)
 {
+#if (KRTOS_SCHEDULER_TYPE == SCHD_TYPE_PREMEMPTIVE)
+	current_thread = &tcbs[Tasks_number-1]; /*Set current thread to background task to start counting from first array element (Highest priority task)*/
+#endif
+	/*Loop through tasks to set current thread to the next pending task*/
 	for (uint8_t i =0; i < Tasks_number; i++)
 	{
 		current_thread = current_thread->nextPt;
@@ -367,15 +372,17 @@ static void osKernel_Dispatcher(void)
 			break;
 		}
 	}
+	/*Set current thread to background task if no tasks are in pending state*/
 	if (current_thread->state != THREAD_PENDING){
 		current_thread = &tcbs[Tasks_number - 1];
 	}
+	/*Clear pending status of current thread*/
 	current_thread->state = THREAD_INACTIVE;
 }
 
 static void __attribute__((used)) osKernel_Scheduler(void)
-#if KRTOS_SCHEDULER_TYPE == SCHD_TYPE_PERIODIC
 {
+#if ((KRTOS_SCHEDULER_TYPE == SCHD_TYPE_PERIODIC) || (KRTOS_SCHEDULER_TYPE == SCHD_TYPE_PREMEMPTIVE))
 	periodic_counter++;
 
 	for (uint8_t i =0; i < Tasks_number; i++)
@@ -385,37 +392,18 @@ static void __attribute__((used)) osKernel_Scheduler(void)
 			tcbs[i].state = THREAD_PENDING;
 		}
 	}
-	osKernel_Dispatcher();
-	if (periodic_counter == 1000)
-	{
-		periodic_counter = 0;
-	}
-}
-#elif KRTOS_SCHEDULER_TYPE == SCHD_TYPE_ROUND_ROBIN
-{
-	current_thread = current_thread->nextPt; /* switch to next thread*/
-}
-#elif KRTOS_SCHEDULER_TYPE == SCHD_TYPE_PREMEMPTIVE
-{
-	periodic_counter++;
 
-	for (uint8_t i =0; i < Tasks_number; i++)
-	{
-		if (!((periodic_counter) % tcbs[i].periodicity))
-		{
-			current_thread - &tcbs[i];
-			break;
-		}
-	}
 	if (periodic_counter == 1000)
 	{
 		periodic_counter = 0;
 	}
-}
+#elif (KRTOS_SCHEDULER_TYPE == SCHD_TYPE_ROUND_ROBIN) 
+	current_thread->nextPt->state = THREAD_PENDING;
 #else 
 #error "Invalid scheduler type"
 #endif
-
+	osKernel_Dispatcher();
+}
 static void osKernel_BackgroundTask(void)
 {
 	while(1){
