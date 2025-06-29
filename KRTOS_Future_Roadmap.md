@@ -4,6 +4,182 @@
 
 This document outlines the planned improvements and new features for the K-RTOS project. The roadmap is organized by priority levels (High, Medium, Low) and implementation complexity to guide development efforts effectively.
 
+---
+
+## Current Status (Snapshot)
+- Preemptive multitasking and PendSV handler: **Implemented**
+- Cooperative and periodic scheduling: **Implemented**
+- Dynamic stack allocation: **Implemented**
+- Background task support: **Implemented**
+- Priority-based scheduling: **Planned**
+- Memory protection, stack overflow detection, resource management, advanced debugging, and power management: **Planned/In Progress**
+
+---
+
+## How-To Guides for Major Features
+
+### 1. Priority-Based Scheduling
+**Description:** Allows tasks to be scheduled based on priority levels, ensuring higher-priority tasks preempt lower-priority ones.
+**Requirements:**
+- TCB must include a priority field.
+- Scheduler must select the highest-priority ready task.
+**Interfaces:**
+- `osKernel_SetTaskPriority(TCB_config_t* task, uint8_t priority)`
+- `osKernel_GetTaskPriority(TCB_config_t* task, uint8_t* priority)`
+**Implementation:**
+- Maintain a ready queue sorted by priority.
+- On each context switch, select the highest-priority pending task.
+
+### 2. Preemptive Multitasking (Implemented)
+**Description:** Enables the OS to interrupt running tasks to switch to others, using PendSV for context switching.
+**Requirements:**
+- PendSV handler for context switching.
+- Mechanism to trigger PendSV from SysTick or other events.
+**Interfaces:**
+- `void PendSV_Handler(void)`
+- `void osKernel_ThreadYield(void)`
+**Implementation:**
+- On SysTick or yield, set PendSV pending bit.
+- PendSV handler saves context, selects next task, restores context.
+
+### 3. Memory Protection
+**Description:** Prevents tasks from accessing unauthorized memory regions using the MPU.
+**Requirements:**
+- MPU configuration per task.
+- TCB must reference memory regions.
+**Interfaces:**
+- `osKernel_ConfigureMPU(MPU_Region_t* regions, uint8_t count)`
+- `osKernel_ProtectTaskMemory(TCB_config_t* task)`
+**Implementation:**
+- Configure MPU on context switch to enforce task boundaries.
+
+### 4. Stack Overflow Detection
+**Description:** Detects and handles stack overflows to prevent system crashes.
+**Requirements:**
+- Stack guard pattern at stack base.
+- Periodic or on-switch stack checking.
+**Interfaces:**
+- `osKernel_CheckStackOverflow(TCB_config_t* task)`
+- `void osKernel_StackOverflowHandler(TCB_config_t* task)`
+**Implementation:**
+- Place guard value at stack base; check value on context switch or periodically.
+
+### 5. Mutexes
+**Description:** Provides mutual exclusion for shared resources.
+**Requirements:**
+- Mutex structure with owner and waiting queue.
+**Interfaces:**
+- `osKernel_MutexCreate(Mutex_t* mutex)`
+- `osKernel_MutexLock(Mutex_t* mutex, uint32_t timeout)`
+- `osKernel_MutexUnlock(Mutex_t* mutex)`
+**Implementation:**
+- Lock/unlock APIs manage ownership and waiting tasks.
+
+### 6. Semaphores
+**Description:** Synchronizes tasks using counting or binary semaphores.
+**Requirements:**
+- Semaphore structure with count and waiting queue.
+**Interfaces:**
+- `osKernel_SemaphoreCreate(Semaphore_t* sem, uint32_t initial_count, uint32_t max_count)`
+- `osKernel_SemaphoreTake(Semaphore_t* sem, uint32_t timeout)`
+- `osKernel_SemaphoreGive(Semaphore_t* sem)`
+**Implementation:**
+- APIs manage count and unblock waiting tasks as needed.
+
+### 7. Message Queues
+**Description:** Enables inter-task communication via buffered messages.
+**Requirements:**
+- Queue structure with buffer, indices, and waiting lists.
+**Interfaces:**
+- `osKernel_QueueCreate(MessageQueue_t* queue, uint32_t item_size, uint32_t max_items)`
+- `osKernel_QueueSend(MessageQueue_t* queue, void* data, uint32_t timeout)`
+- `osKernel_QueueReceive(MessageQueue_t* queue, void* data, uint32_t timeout)`
+**Implementation:**
+- APIs manage buffer, indices, and waiting tasks.
+
+### 8. Dynamic Memory Management
+**Description:** Provides heap or pool-based memory allocation for tasks and objects.
+**Requirements:**
+- Heap or memory pool structures.
+**Interfaces:**
+- `osKernel_CreateMemoryPool(MemoryPool_t* pool, uint32_t block_size, uint32_t block_count)`
+- `void* osKernel_AllocateFromPool(MemoryPool_t* pool)`
+- `osKernel_FreeToPool(MemoryPool_t* pool, void* block)`
+**Implementation:**
+- Manage free/used blocks and allocation requests.
+
+### 9. Task Monitoring and Statistics
+**Description:** Tracks task execution, CPU usage, and system stats.
+**Requirements:**
+- Stats structures in TCB or system.
+**Interfaces:**
+- `osKernel_GetTaskStats(TCB_config_t* task, TaskStats_t* stats)`
+- `osKernel_GetSystemStats(SystemStats_t* stats)`
+**Implementation:**
+- Update stats on context switch and periodically.
+
+### 10. Power Management
+**Description:** Supports low-power modes and wakeup sources.
+**Requirements:**
+- Power manager structure and callbacks.
+**Interfaces:**
+- `osKernel_EnterSleepMode(PowerMode_t mode, uint32_t duration)`
+- `osKernel_ConfigureWakeupSource(uint32_t source)`
+**Implementation:**
+- Enter/exit low-power modes based on system state.
+
+### 11. Debugging Framework
+**Description:** Adds breakpoints, watchpoints, and trace for debugging.
+**Requirements:**
+- Debug config and trace buffer structures.
+**Interfaces:**
+- `osKernel_EnableDebugging(DebugConfig_t* config)`
+- `osKernel_AddBreakpoint(uint32_t address)`
+**Implementation:**
+- Manage debug events and trace buffer.
+
+### 12. Configuration Management
+**Description:** Allows runtime adjustment of system parameters.
+**Requirements:**
+- Config manager and parameter structures.
+**Interfaces:**
+- `osKernel_SetConfigParam(const char* name, uint32_t value)`
+- `osKernel_GetConfigParam(const char* name, uint32_t* value)`
+**Implementation:**
+- Store and retrieve config parameters at runtime.
+
+### 13. Error Handling and Recovery
+**Description:** Handles system errors and supports recovery.
+**Requirements:**
+- Error handler and code enums.
+**Interfaces:**
+- `osKernel_SetErrorHandler(callback_function_t handler)`
+- `ErrorCode_t osKernel_GetLastError(void)`
+**Implementation:**
+- Call error handler on error, support recovery routines.
+
+### 14. Context Switch Optimization
+**Description:** Reduces context switch overhead for better performance.
+**Requirements:**
+- Optimized assembly routines.
+**Interfaces:**
+- `osKernel_EnableFastContextSwitch(void)`
+- `uint32_t osKernel_GetContextSwitchTime(void)`
+**Implementation:**
+- Use minimal instructions for save/restore.
+
+### 15. Memory Access Optimization
+**Description:** Improves memory access patterns for cache efficiency.
+**Requirements:**
+- Aligned memory allocation routines.
+**Interfaces:**
+- `void* osKernel_AlignedMalloc(size_t size, size_t alignment)`
+- `osKernel_AlignedFree(void* ptr)`
+**Implementation:**
+- Allocate memory with required alignment.
+
+---
+
 ## Priority Levels
 
 - **🔴 High Priority**: Critical for production use, security, and reliability

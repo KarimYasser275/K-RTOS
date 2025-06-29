@@ -1,8 +1,7 @@
-# K-RTOS Architecture Analysis
+# K-RTOS Architecture (Current Snapshot)
 
 ## System Overview
-
-K-RTOS is a lightweight Real-Time Operating System designed for ARM Cortex-M3 microcontrollers, specifically targeting the STM32F103C8Tx platform. The system implements a cooperative and periodic task scheduling mechanism with round-robin scheduling support.
+K-RTOS is a lightweight Real-Time Operating System for ARM Cortex-M3 microcontrollers (STM32F103C8Tx), supporting preemptive, round-robin, and periodic scheduling. It features dynamic stack allocation, background task support, and efficient context switching using SysTick and PendSV interrupts.
 
 ## Architecture Diagram
 
@@ -56,198 +55,75 @@ K-RTOS is a lightweight Real-Time Operating System designed for ARM Cortex-M3 mi
 ## Component Analysis
 
 ### 1. Kernel Core (`osKernel.c`)
-
-**Key Components:**
-- **Task Control Block (TCB)**: Manages thread state, stack, and scheduling information
-- **Scheduler**: Implements round-robin, cooperative, and periodic scheduling
-- **Context Switching**: Handles register save/restore during task switches
-- **Thread Management**: Creation, removal, and suspension of threads
-
-**Data Structures:**
-```c
-typedef struct TCB_s {
-    int32_t* stack;              // Thread stack pointer
-    struct TCB_s* next_thread;   // Next thread in linked list
-    callback_function_t callback_function;  // Thread function
-    uint32_t stack_size;         // Stack size in words
-    uint32_t periodicity;        // For periodic tasks
-    uint32_t ex_time;           // Execution time
-    int32_t* stackpt;           // Current stack pointer
-    uint8_t index;              // Thread index
-    uint8_t priority;           // Thread priority
-} TCB_config_t;
-```
+- **Task Control Block (TCB):**
+  - Manages thread state, stack, scheduling info, and priority
+  - Supports dynamic stack allocation
+- **Scheduler:**
+  - Supports preemptive, round-robin, and periodic scheduling
+  - Uses SysTick and PendSV for context switching
+- **Context Switching:**
+  - Register save/restore in assembly
+  - PendSV handler for preemptive switches
+- **Thread Management:**
+  - Thread creation, removal, suspension
+  - Background task support
 
 ### 2. Time Base System (`Time_Base.c`)
-
-**Features:**
-- SysTick timer configuration
-- Time-based delays
-- Tick counting
+- SysTick timer configuration (1ms resolution)
+- Time-based delays and tick counting
 - Configurable time periods
 
-**Key Functions:**
-- `timebase_init()`: Initialize SysTick timer
-- `timebase_ReloadTimeChange()`: Configure timer period
-- `Systick_Delay()`: Provide millisecond delays
-
 ### 3. Configuration System (`KRTOS_cfg.h`)
-
-**Configurable Parameters:**
-- `NUM_OF_THREADS`: Maximum number of threads (3)
-- `STACK_SIZE`: Stack size per thread (100 words = 400 bytes)
-- `KRTOS_SCHEDULER_TYPE`: Scheduling algorithm selection
+- Configurable thread count and stack size
+- Scheduler type selection (preemptive, round-robin, periodic)
 
 ### 4. System Calls (`syscalls.c`)
-
-**Implemented System Calls:**
 - Memory management (`malloc`, `free`)
 - I/O operations (`_read`, `_write`)
 - Process management (`_getpid`, `_kill`, `_exit`)
-- File operations (stub implementations)
 
 ### 5. Startup and Initialization (`startup_stm32f103c8tx.s`)
-
-**Features:**
-- Vector table setup
-- Stack initialization
-- Data/BSS section initialization
+- Vector table and stack setup
 - System clock configuration
 
 ## Scheduling Architecture
-
-### Round-Robin Scheduler
-```
-┌─────────────┐    ┌─────────────┐    ┌─────────────┐
-│   Task 0    │───▶│   Task 1    │───▶│   Task 2    │
-│             │    │             │    │             │
-└─────────────┘    └─────────────┘    └─────────────┘
-       ▲                                    │
-       └────────────────────────────────────┘
-```
-
-### Periodic Scheduler
-```
-┌─────────────────────────────────────────────────────────┐
-│                Periodic Task Manager                    │
-├─────────────────────────────────────────────────────────┤
-│  Counter: 0 ──▶ 1 ──▶ 2 ──▶ ... ──▶ 999 ──▶ 0         │
-│                                                         │
-│  Task3: Execute every 100 ticks                         │
-│  Task4: Execute every 200 ticks                         │
-│  Task5: Execute every 500 ticks                         │
-└─────────────────────────────────────────────────────────┘
-```
+- **Preemptive Scheduler:** Uses SysTick and PendSV for context switching; highest-priority ready task is selected.
+- **Round-Robin Scheduler:** Circular linked list of TCBs; equal time slices.
+- **Periodic Scheduler:** Tasks execute at configurable intervals based on tick counter.
 
 ## Context Switching Mechanism
-
-### Context Save (SysTick_Handler)
-1. Disable interrupts (`CPSID I`)
-2. Save registers R4-R11 to stack
-3. Save current stack pointer to TCB
-4. Call periodic scheduler
-5. Load next thread's stack pointer
-6. Restore registers R4-R11
-7. Enable interrupts (`CPSIE I`)
-8. Return from exception
-
-### Context Restore (osSchedular_Launch)
-1. Load current thread's stack pointer
-2. Restore registers R4-R11 from stack
-3. Restore registers R0-R3, R12
-4. Skip LR and PSR
-5. Enable interrupts
-6. Branch to thread function
+- **SysTick_Handler:** Triggers context save and schedules next task.
+- **PendSV_Handler:** Performs context switch for preemptive multitasking.
+- **osSchedular_Launch:** Restores context and starts thread execution.
 
 ## Memory Architecture
-
-```
-┌─────────────────────────────────────────────────────────┐
-│                    Memory Layout                        │
-├─────────────────────────────────────────────────────────┤
-│  0x08000000 ──▶ Flash Memory (Program)                 │
-│                                                         │
-│  0x20000000 ──▶ SRAM (Data + Stacks)                   │
-│              ├─▶ Global Variables                       │
-│              ├─▶ TCB Array                             │
-│              └─▶ Thread Stacks                         │
-│                                                         │
-│  Stack Layout per Thread:                               │
-│  ┌─────────────────┐                                    │
-│  │     PSR         │ ← Stack Top                        │
-│  │     PC          │                                    │
-│  │     LR          │                                    │
-│  │     R12         │                                    │
-│  │     R3          │                                    │
-│  │     R2          │                                    │
-│  │     R1          │                                    │
-│  │     R0          │                                    │
-│  │     R11         │                                    │
-│  │     R10         │                                    │
-│  │     R9          │                                    │
-│  │     R8          │                                    │
-│  │     R7          │                                    │
-│  │     R6          │                                    │
-│  │     R5          │                                    │
-│  │     R4          │ ← Stack Pointer                    │
-│  └─────────────────┘                                    │
-└─────────────────────────────────────────────────────────┘
-```
+- **Flash (0x08000000):** Program code
+- **SRAM (0x20000000):** Global variables, TCB array, thread stacks (dynamically allocated)
+- **Stack Layout:** Standard ARM Cortex-M exception frame plus saved registers
 
 ## Interrupt Handling
-
-### Vector Table
-- **SysTick_IRQn**: Main scheduler interrupt (priority 15)
-- **PendSV_IRQn**: Context switching (if implemented)
-- **Other IRQs**: Standard STM32 peripheral interrupts
-
-### Interrupt Priority Levels
-- SysTick: Lowest priority (15) for cooperative scheduling
-- Other interrupts: Higher priority for real-time responsiveness
+- **SysTick_IRQn:** Main scheduler interrupt
+- **PendSV_IRQn:** Context switching for preemptive multitasking
+- **Other IRQs:** Standard STM32 peripheral interrupts
 
 ## Key Features
+- Preemptive, round-robin, and periodic scheduling
+- Dynamic stack allocation per thread
+- Background task support
+- Efficient context switching (SysTick + PendSV)
+- Configurable thread count and stack size
 
-### 1. Cooperative Scheduling
-- Tasks yield control voluntarily using `osKernel_ThreadYield()`
-- No preemption except through SysTick timer
-- Simple and predictable behavior
+## Limitations (Current)
+- No priority-based scheduling (planned)
+- No advanced resource management (mutexes, semaphores, etc.)
+- No stack overflow detection (planned)
+- No memory protection (planned)
 
-### 2. Periodic Task Support
-- Tasks can be configured to run at specific intervals
-- Automatic execution based on tick counter
-- Configurable periodicity (in milliseconds)
-
-### 3. Stack Management
-- Automatic stack allocation for each thread
-- Stack initialization with dummy values for debugging
-- Proper stack pointer management during context switches
-
-### 4. Configuration Flexibility
-- Configurable number of threads
-- Adjustable stack sizes
-- Selectable scheduling algorithms
-
-## Limitations and Considerations
-
-### 1. Memory Constraints
-- Limited to 3 threads maximum
-- Fixed stack size per thread (400 bytes)
-- No dynamic memory allocation for TCBs
-
-### 2. Scheduling Limitations
-- No priority-based scheduling
-- No preemptive multitasking
-- Limited to round-robin and cooperative modes
-
-### 3. Real-time Constraints
-- SysTick-based timing only
-- No deadline monitoring
-- No resource sharing mechanisms
-
-### 4. Debugging Support
-- Basic stack initialization with debug values
-- No built-in debugging hooks
-- Limited error handling
+## Recent Improvements
+- Added preemptive scheduling and PendSV handler
+- Dynamic stack allocation for threads
+- Background task support
+- Improved thread management and context switching
 
 ## Performance Characteristics
 
